@@ -1,8 +1,11 @@
 import axios from "axios";
 import * as csv from "csvtojson";
+import * as showdown from "showdown";
+import * as jsdom from "jsdom";
+
 import { octokit } from "..";
 
-export const getMoviesWithRate = (ctx: any) => {
+export const getDataWithRate = (ctx: any) => {
   return new Promise(async (resolve, reject) => {
     const documentId = ctx.update.message.document.file_id;
     const {
@@ -15,51 +18,30 @@ export const getMoviesWithRate = (ctx: any) => {
     const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${filePath}`;
     const fileContent = await (await axios.get(fileUrl)).data;
     const content = await csv().fromString(fileContent);
-    const moviesWithRate = content
-      .map((movie) => ({
-        title: movie.Title,
-        url: movie.URL,
-        rate: movie["Your Rating"],
+    const dataWithRate = content
+      .map((item) => ({
+        title: item.Title,
+        url: item.URL,
+        type: item["Title Type"],
+        genres: item.Genres.split(", "),
+        rate: item["Your Rating"],
       }))
-      .filter((movie) => movie.rate);
+      .filter((item) => item.rate);
 
-    resolve(moviesWithRate);
+    const data = {
+      movies: dataWithRate.filter((item) => item.type === "movie"),
+      videoGames: dataWithRate.filter((item) => item.type === "videoGame"),
+      tvSeries: dataWithRate.filter(
+        (item) => item.type === "tvSeries" || item.type === "tvEpisode"
+      ),
+    };
+
+    resolve(data);
   });
 };
 
-export const writeFileToGithub = (moviesWithRate: any) => {
-  let largestTitleStringLength = 0;
-  moviesWithRate.forEach((movie: any) => {
-    if (movie.title.length > largestTitleStringLength) {
-      largestTitleStringLength = movie.title.length;
-    }
-  });
-
-  const moviesWithRateString =
-    `<h1>My ratings on Movies</h1><br /><br />   \
-  Here's a list of my ratings on all the movies I watched in my entire life.<br /><br />   \
-  The list is updated from time to time.<br /><br />   \
-  The list is sorted by the best rating I gave to the movie to the worst.<br /><br />   \
-  Total Movies: <b>${moviesWithRate.length}</b><br /><br />   \
-  ` +
-    moviesWithRate
-      .sort((a: any, b: any) => Number(b.rate) - Number(a.rate))
-      .map(
-        (movie: any) =>
-          `<a href='${movie.url}'>${movie.title}</a> ` +
-          ` ${
-            Array.from({
-              length: largestTitleStringLength - movie.title.length + 6,
-            })
-              .map(() => "-")
-              .join("") + ">"
-          } ${movie.rate}<br />`
-      )
-      .join("");
-
-  const content = Buffer.from(
-    JSON.stringify(moviesWithRateString).replace(/"/g, "").replace(/'/g, '"')
-  ).toString("base64");
+export const writeFileToGithub = (dataWithRate: any) => {
+  const content = Buffer.from(JSON.stringify(dataWithRate)).toString("base64");
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -70,7 +52,7 @@ export const writeFileToGithub = (moviesWithRate: any) => {
           {
             owner: "zeyadetman",
             repo: "Notes",
-            file_path: "docs/Movies/Watched List.md",
+            file_path: "src/data/imdb.json",
           }
         );
 
@@ -83,7 +65,7 @@ export const writeFileToGithub = (moviesWithRate: any) => {
           owner: "zeyadetman",
           repo: "Notes",
           ...(shaValue && { sha: shaValue }),
-          path: "docs/Movies/Watched List.md",
+          path: "src/data/imdb.json",
           message: "Update movies rating list",
           committer: {
             name: "zeyadetman",

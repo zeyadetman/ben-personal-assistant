@@ -2,7 +2,7 @@ import { Telegraf, Types } from "telegraf";
 import * as dotenv from "dotenv";
 import { start } from "./commands/start";
 import { help } from "./commands/help";
-import { getMoviesWithRate, writeFileToGithub } from "./commands/syncMovies";
+import { getDataWithRate, writeFileToGithub } from "./commands/syncMovies";
 import { Octokit } from "octokit";
 dotenv.config();
 
@@ -29,13 +29,15 @@ class ConcreteBot implements Bot {
 
 export class DecoratorBot implements Bot {
   bot: Telegraf;
+  component: Bot;
 
-  constructor(bot: Telegraf) {
-    this.bot = bot;
+  constructor(component: Bot) {
+    this.component = component;
+    this.bot = this.component.bot;
   }
 
   public launch() {
-    this.bot.launch();
+    this.component.bot.launch();
   }
 }
 
@@ -46,9 +48,8 @@ class BotWithCommands extends DecoratorBot {
       ctx.replay;
     });
     this.bot.on("document", async (ctx: any) => {
-      const moviesWithRate = await getMoviesWithRate(ctx);
-      await writeFileToGithub(moviesWithRate);
-      console.log({ moviesWithRate });
+      const dataWithRate = await getDataWithRate(ctx);
+      await writeFileToGithub(dataWithRate);
       ctx.reply("done! 🎉");
     });
     this.bot.start(start);
@@ -74,6 +75,7 @@ class BotWithStop extends DecoratorBot {
   }
 }
 
-const bot = new BotWithCommands(new Telegraf(process.env.BOT_TOKEN || ""));
+const simple = new ConcreteBot(new Telegraf(process.env.BOT_TOKEN));
+const bot = new BotWithCommands(simple);
 
 bot.launch();
