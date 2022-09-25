@@ -4,6 +4,12 @@ import * as showdown from "showdown";
 import * as jsdom from "jsdom";
 
 import { octokit } from "..";
+import { Markup } from "telegraf";
+import { REQUEST_IMDB_EXPORTED_FILE_MESSAGE } from "../utils/constants";
+
+export const syncIMDB = (ctx) => {
+  ctx.reply(REQUEST_IMDB_EXPORTED_FILE_MESSAGE, Markup.forceReply());
+};
 
 export const getDataWithRate = (ctx: any) => {
   return new Promise(async (resolve, reject) => {
@@ -37,47 +43,5 @@ export const getDataWithRate = (ctx: any) => {
     };
 
     resolve(data);
-  });
-};
-
-export const writeFileToGithub = (dataWithRate: any) => {
-  const content = Buffer.from(JSON.stringify(dataWithRate)).toString("base64");
-
-  return new Promise(async (resolve, reject) => {
-    try {
-      let shaValue = null;
-      try {
-        const { data: { sha } = { sha: null } } = await octokit.request(
-          "GET /repos/{owner}/{repo}/contents/{file_path}",
-          {
-            owner: "zeyadetman",
-            repo: "Notes",
-            file_path: "src/data/imdb.json",
-          }
-        );
-
-        shaValue = sha;
-      } catch (error) {}
-
-      const res = await octokit.request(
-        "PUT /repos/{owner}/{repo}/contents/{path}",
-        {
-          owner: "zeyadetman",
-          repo: "Notes",
-          ...(shaValue && { sha: shaValue }),
-          path: "src/data/imdb.json",
-          message: "Update movies rating list",
-          committer: {
-            name: "zeyadetman",
-            email: "zeyadetman@gmail.com",
-          },
-          content,
-        }
-      );
-      resolve(res);
-    } catch (error) {
-      console.log(error);
-      reject(error);
-    }
   });
 };
