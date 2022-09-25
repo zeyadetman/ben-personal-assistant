@@ -8,7 +8,12 @@ import { Markup } from "telegraf";
 import { REQUEST_IMDB_EXPORTED_FILE_MESSAGE } from "../utils/constants";
 
 export const syncIMDB = (ctx) => {
-  ctx.reply(REQUEST_IMDB_EXPORTED_FILE_MESSAGE, Markup.forceReply());
+  if (ctx.message.from.username === "zeyadetman") {
+    ctx.reply(REQUEST_IMDB_EXPORTED_FILE_MESSAGE, Markup.forceReply());
+  } else {
+    ctx.reply("You're not allowed to use this command");
+    ctx.reply("أنت مين يا عم؟");
+  }
 };
 
 export const getDataWithRate = (ctx: any) => {

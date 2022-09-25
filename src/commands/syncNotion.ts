@@ -2,6 +2,12 @@ import { convertTitleToFileName } from "../utils/convert-name";
 import { writeFileToGithub } from "../utils/writeFileToGithub";
 
 export const syncNotion = async (ctx: any) => {
+  if (ctx.message.from.username !== "zeyadetman") {
+    ctx.reply("You're not allowed to use this command");
+    ctx.reply("أنت مين يا عم؟");
+    return;
+  }
+
   const { Client } = require("@notionhq/client");
   const { NotionToMarkdown } = require("notion-to-md");
 
