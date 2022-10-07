@@ -26,4 +26,8 @@ const simple = new ConcreteBot(new Telegraf(process.env.BOT_TOKEN));
 const botWithEvents = new BotWithEvents(simple);
 const botWithCommands = new BotWithCommands(botWithEvents);
 
-botWithCommands.launch();
+try {
+  botWithCommands.launch();
+} catch (err) {
+  console.log(err);
+}

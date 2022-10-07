@@ -102,9 +102,7 @@ export const syncNotion = async (ctx: any) => {
 
           ctx.reply(`writing file to github: docs${filePath}.md`);
           await writeFileToGithub(
-            JSON.stringify(mdString)
-              .replace(/\\n/g, " \r\n ")
-              .replace(/\"/g, ""),
+            JSON.stringify(mdString).replace(/\\n/g, "\r\n").replace(/\"/g, ""),
             `docs${filePath}.md`
           );
         }
